@@ -1,0 +1,36 @@
+# --- 절대 커밋하지 않는 것 (자격증명 / 실제 접속 정보) ---
+.env
+.env.*
+!.env.example
+config/connections.yaml
+
+# --- 런타임 생성물 (Connection별 Ontology 인덱스, Q&A 로그) ---
+data/ontology_index/*
+!data/ontology_index/.gitkeep
+data/qa_logs/*
+!data/qa_logs/.gitkeep
+*.log
+
+# --- 서드파티 배포물 (사용자가 직접 준비, drivers/tibero/README.md) ---
+drivers/tibero/*.jar
+
+# --- 로컬 모델 저장 (scripts/download_embedding_model.py --save-to) ---
+models/
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# --- 에디터 / OS / 에이전트 로컬 상태 ---
+.idea/
+.vscode/
+.DS_Store
+.claude/
+.omc/

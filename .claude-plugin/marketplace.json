@@ -1,0 +1,22 @@
+{
+  "name": "dbExpert",
+  "metadata": {
+    "description": "dbExpert single-plugin marketplace (DBA analysis / tuning / data-pipeline plugin for Claude Code)"
+  },
+  "owner": {
+    "name": "KimJongYoul",
+    "email": "youly92@naver.com"
+  },
+  "plugins": [
+    {
+      "name": "dbExpert",
+      "source": "./",
+      "description": "DB error, slow query, tuning and data-pipeline analysis plugin for Claude Code",
+      "author": {
+        "name": "KimJongYoul",
+        "email": "youly92@naver.com"
+      },
+      "license": "MIT"
+    }
+  ]
+}

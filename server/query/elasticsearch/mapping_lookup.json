@@ -1,0 +1,5 @@
+{
+  "_comment": "get_schema Tool 용 — GET /{{index}}/_mapping 응답을 SchemaObject로 변환하는 기준 템플릿. _meta 필드가 있으면 comment로 사용한다.",
+  "method": "GET",
+  "path": "/{{index}}/_mapping"
+}

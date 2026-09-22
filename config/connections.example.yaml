@@ -1,0 +1,179 @@
+# Connection Profile 예시. 실제 사용 시 connections.yaml로 복사하고
+# 비밀번호/계정은 절대 평문으로 넣지 않는다 — user_env/password_env에
+# "환경변수 이름"만 적으면 ConnectionManager.load()가 os.environ에서
+# 실제 값을 읽어온다 (Doc/00_개발요건사항.md §9, server/connection/manager.py).
+# 스키마 정의: Doc/01_개발정의서.md §4.1 Connection Profile Schema
+#
+# connect_timeout_sec / query_timeout_sec는 Connection별로 선택 지정한다.
+# 지정하지 않으면 기본값(Connect 5초 / Query 30초, Doc/00_개발요건사항.md §33)을
+# 쓴다 — server/database/base.py의 BaseAdapter.connect_timeout_sec/
+# query_timeout_sec 프로퍼티가 이 값을 읽어 각 Engine Driver에 실제로 전달한다.
+
+connections:
+
+  prod-aurora:
+    db_type: mysql
+    engine_family: rdb
+
+    connection:
+      host: xxx.cluster-xxxx.ap-northeast-2.rds.amazonaws.com
+      port: 3306
+      database: appdb
+
+    user_env: DBEXPERT_PROD_AURORA_USER
+    password_env: DBEXPERT_PROD_AURORA_PASSWORD
+
+    # 예시: 이 Connection만 Query Timeout을 60초로 늘림 (생략하면 기본 30초)
+    query_timeout_sec: 60
+
+    # login_mode: "pem"(기본값) | "password" — 둘 중 하나만 채운다
+    # (server/connection/ssh_tunnel.py, Doc/01_개발정의서.md §4.1 참고).
+    # pem 방식: identity_file(개인키 경로) + 선택적 passphrase_env(암호화된
+    # 키일 때만). login_mode를 생략해도 identity_file이 있으면 pem으로 동작한다.
+    ssh:
+      enabled: true
+      host: bastion.example.com
+      port: 22
+      user: ec2-user
+      login_mode: pem
+      identity_file: ~/.ssh/prod.pem
+      # passphrase_env: DBEXPERT_PROD_AURORA_BASTION_KEY_PASSPHRASE
+
+    ontology:
+      enabled: true
+      daily_build_time: "02:00"
+
+  dev-postgres:
+    db_type: postgresql
+    engine_family: rdb
+
+    connection:
+      host: 10.10.10.20
+      port: 5432
+      database: dev
+
+    user_env: DBEXPERT_DEV_POSTGRES_USER
+    password_env: DBEXPERT_DEV_POSTGRES_PASSWORD
+
+    ssh:
+      enabled: false
+
+  prod-mssql:
+    db_type: mssql
+    engine_family: rdb
+
+    connection:
+      host: mssql-prod.internal
+      port: 1433
+      database: appdb
+
+    user_env: DBEXPERT_PROD_MSSQL_USER
+    password_env: DBEXPERT_PROD_MSSQL_PASSWORD
+
+    ssh:
+      enabled: false
+
+  prod-clickhouse:
+    db_type: clickhouse
+    engine_family: dw
+
+    connection:
+      host: clickhouse.internal
+      port: 8443
+      database: analytics
+
+    user_env: DBEXPERT_PROD_CLICKHOUSE_USER
+    password_env: DBEXPERT_PROD_CLICKHOUSE_PASSWORD
+
+    ssh:
+      enabled: false
+
+  prod-mongo:
+    db_type: mongodb
+    engine_family: document
+
+    connection:
+      uri_host: mongo-prod.internal
+      port: 27017
+      database: appdb
+
+    user_env: DBEXPERT_PROD_MONGO_USER
+    password_env: DBEXPERT_PROD_MONGO_PASSWORD
+
+    # password 방식 예시: 개인키 대신 Bastion 계정 비밀번호로 로그인.
+    # 비밀번호도 평문으로 적지 않고 password_env(환경변수 이름)로 준다(§9 원칙).
+    ssh:
+      enabled: true
+      host: bastion.example.com
+      port: 22
+      user: ec2-user
+      login_mode: password
+      password_env: DBEXPERT_PROD_MONGO_BASTION_PASSWORD
+
+  # Replica Set/mongodb+srv:// 예시. uri_host/port 대신 connection.uri에
+  # 완전한 연결 문자열을 주면 pymongo가 seed list/SRV 조회를 알아서 처리한다
+  # (server/database/mongodb.py, Doc/01_개발정의서.md §11).
+  prod-mongo-replicaset:
+    db_type: mongodb
+    engine_family: document
+
+    connection:
+      uri: "mongodb+srv://mongo-cluster.example.mongodb.net/appdb?replicaSet=rs0"
+
+    user_env: DBEXPERT_PROD_MONGO_USER
+    password_env: DBEXPERT_PROD_MONGO_PASSWORD
+
+    ssh:
+      enabled: false
+
+  # elasticsearch/opensearch는 각각 별도 Adapter(server/database/elasticsearch.py/
+  # opensearch.py)로 분리되어 있다 — Client 라이브러리가 서버 종류에 따라
+  # 안전성이 갈리기 때문 (Doc/01_개발정의서.md §11).
+  prod-search:
+    db_type: opensearch  # 순정 Elastic이면 db_type: elasticsearch
+    engine_family: search
+
+    connection:
+      host: search.internal
+      port: 9200
+
+    user_env: DBEXPERT_PROD_SEARCH_USER
+    password_env: DBEXPERT_PROD_SEARCH_PASSWORD
+
+    ssh:
+      enabled: false
+
+  prod-cache:
+    db_type: redis
+    engine_family: keyvalue
+
+    connection:
+      host: cache.internal
+      port: 6379
+      db_number: 0
+
+    # Redis는 AUTH 없이 운영하는 경우도 흔해 password_env를 생략할 수 있다.
+    password_env: DBEXPERT_PROD_CACHE_PASSWORD
+
+    ssh:
+      enabled: false
+
+  # ElastiCache Cluster Mode Enabled 예시. cluster_mode: true + nodes(시작
+  # 노드 목록)를 주면 redis.cluster.RedisCluster로 접속한다
+  # (server/database/redis.py, Doc/01_개발정의서.md §11).
+  prod-cache-cluster:
+    db_type: redis
+    engine_family: keyvalue
+
+    connection:
+      cluster_mode: true
+      nodes:
+        - host: cache-cluster-0001.internal
+          port: 6379
+        - host: cache-cluster-0002.internal
+          port: 6379
+
+    password_env: DBEXPERT_PROD_CACHE_PASSWORD
+
+    ssh:
+      enabled: false

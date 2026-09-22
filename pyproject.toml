@@ -1,0 +1,79 @@
+[project]
+name = "dbExpert"
+version = "0.1.0"
+description = "DBA analysis, tuning and data-pipeline plugin for Claude Code"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # mcp 2.x는 FastMCP를 MCPServer로 이름을 바꾸고 API가 달라졌다
+    # (server/main.py는 아직 `mcp.server.fastmcp.FastMCP`(1.x API)를 쓴다).
+    # 상한 없이 두면 uv sync가 2.x를 받아와 `ModuleNotFoundError:
+    # mcp.server.fastmcp`로 서버가 아예 기동하지 않는다 — 실제로 uv.lock
+    # 기반 venv에서 재현/확인됨. 2.x로 마이그레이션 전까지는 1.x에 고정한다.
+    "mcp>=1.0.0,<2.0.0",
+    "SQLAlchemy>=2.0",
+    "PyMySQL>=1.1",
+    "psycopg[binary]>=3.1",
+    "paramiko>=3.4",
+    "PyYAML>=6.0",
+    "pandas>=2.2",
+    # log_qa를 CPU 유휴 시점까지 미루는 background_writer.py의 CPU 사용률
+    # 판단에 쓴다(server/learning/background_writer.py).
+    "psutil>=6.0",
+    # Plugin 루트의 .env(커밋되지 않음)에서 실제 계정/비밀번호를 읽어온다 —
+    # Claude Code가 MCP Server를 하위 프로세스로 띄울 때 로그인 쉘
+    # 프로파일을 거치지 않아도(export 안 된 상태여도) 항상 같은 값을
+    # 읽도록 하기 위함(server/main.py, Doc/02_설치.md §5).
+    "python-dotenv>=1.0",
+]
+
+# Engine 확장은 Doc/00_개발요건사항.md §7.3 (Adapter Registry) 참고.
+# 각 extras는 해당 Engine의 database/<engine>.py Adapter가 필요로 하는
+# Driver만 담는다 — 전체 기본 설치에는 포함하지 않는다 (§28 원칙).
+[project.optional-dependencies]
+clickhouse = ["clickhouse-connect>=0.7"]
+mongodb = ["pymongo>=4.7"]
+elasticsearch = ["elasticsearch>=8.13"]
+opensearch = ["opensearch-py>=2.6"]
+redis = ["redis>=5.0"]
+mssql = ["pymssql>=2.3"]
+oracle = ["oracledb>=2.0"]
+# Tibero는 순정 Python DB-API 드라이버가 없어 JPype로 JVM을 띄우고
+# JDBC 드라이버(drivers/tibero/tibero6-jdbc.jar)를 직접 호출한다.
+# ⚠️ (1) JDBC jar는 TmaxData 배포물이라 저장소에 포함하지 않으므로 사용자가
+#        직접 구해 위 경로에 두어야 하고, (2) JPype1 설치만으로는 부족하고
+#        호스트에 JVM(Java Runtime)이 별도로 설치되어 있어야 한다
+#        (drivers/tibero/README.md 참고).
+tibero = ["JPype1>=1.5"]
+# Ontology/RAG (Doc/00 §10, §28) — Embedding Provider·Vector Store를 완전히
+# 로컬에서 실행한다(외부 API 호출 없음).
+#   - Vector Store   : LanceDB (임베디드, 파일 기반 — 별도 서버 불필요)
+#   - Embedding 모델 : sentence-transformers (server/catalog/embeddings.py)
+# ⚠️ 최초 실행 시 HuggingFace Hub에서 다국어 모델을 1회 다운로드한다(약 460MB).
+#    미리 받아두려면 `uv run python scripts/download_embedding_model.py`
+#    (Doc/02_설치.md §4 참고).
+ontology = ["lancedb>=0.13", "sentence-transformers>=3.0"]
+all = [
+    "dbExpert[clickhouse,mongodb,elasticsearch,opensearch,redis,mssql,tibero,ontology]",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    # tests/integration/ — 실제 MySQL/PostgreSQL Docker 컨테이너로 Adapter를
+    # 검증한다. Docker가 없으면 tests/integration/conftest.py가 자동으로
+    # 건너뛴다 (Doc/00_개발요건사항.md §41 비기능요구사항 참고).
+    "testcontainers[mysql,postgres]>=4.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["server"]
+
+[tool.pytest.ini_options]
+markers = [
+    "real_embeddings: 실제 sentence-transformers 모델을 로드한다(느림, ontology extras 필요)",
+    "integration: 실제 Docker 컨테이너(MySQL/PostgreSQL 등)에 연결한다(느림, dev extras 필요)",
+]

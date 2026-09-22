@@ -1,0 +1,10 @@
+{
+  "name": "dbExpert",
+  "version": "0.1.0",
+  "description": "DB error, slow query, tuning and data-pipeline analysis plugin for Claude Code",
+  "author": {
+    "name": "KimJongYoul",
+    "email": "youly92@naver.com"
+  },
+  "license": "MIT"
+}

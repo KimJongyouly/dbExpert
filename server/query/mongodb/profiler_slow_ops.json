@@ -1,0 +1,17 @@
+{
+  "_comment": "get_slow_operations Tool 용 Aggregation Pipeline 템플릿 (system.profile 대상). :min_duration_ms 는 Adapter에서 바인딩.",
+  "collection": "system.profile",
+  "pipeline": [
+    { "$match": { "millis": { "$gte": "{{min_duration_ms}}" } } },
+    { "$sort": { "millis": -1 } },
+    { "$limit": "{{limit}}" },
+    {
+      "$project": {
+        "operation_id": "$op",
+        "text": "$command",
+        "duration_ms": "$millis",
+        "ts": 1
+      }
+    }
+  ]
+}
