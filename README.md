@@ -13,7 +13,68 @@ ClickHouse / MongoDB / Elasticsearch·OpenSearch / Redis)을 하나의 Tool
 > schema ontology) so it can reason like a DBA / data engineer. Docs are in
 > Korean; the code and tool names are in English.*
 
-![architecture](Doc/architecture.png)
+```mermaid
+flowchart TB
+    subgraph CC["Claude Code"]
+        direction LR
+        U["User"] -- "자연어 요청" --> C["Claude"] --> P["Plugin / Skill / MCP"]
+    end
+
+    subgraph PLUGIN["dbExpert Plugin"]
+        direction LR
+        SM["`**Skills (Maintenance)**
+        • db-error
+        • slow-query`"]
+        ST["`**Skills (Tuner)**
+        • index-tuning
+        • query-tuning`"]
+        SD["`**Skills (DataEngineer)**
+        • data-pipeline`"]
+        MCP["`**MCP Server**
+        • db-analyzer`"]
+        SM ~~~ ST ~~~ SD ~~~ MCP
+    end
+
+    subgraph PY["Python DB Analyzer"]
+        direction LR
+        CM["`**Connection Manager**
+        • Direct Connection
+        • SSH Tunnel → Bastion`"]
+        AR["`**Adapter Registry**
+        • db_type ↔ Adapter
+        • Capability 기반 확장 구조`"]
+        OI["`**Ontology Index Store**
+        • Vector Store
+        • Server › Namespace › Container › Field`"]
+        QA["`**Q&A / Query Pattern Store**
+        • Server별 Q&A 로그
+        • 대표 쿼리 패턴`"]
+        CM ~~~ AR ~~~ OI ~~~ QA
+    end
+
+    subgraph DB["DB Driver"]
+        direction LR
+        MY["`**MySQL**
+        RDB`"]
+        PG["`**PostgreSQL**
+        RDB`"]
+        TB["`**Tibero**
+        RDB`"]
+        MS["`**MSSQL**
+        RDB`"]
+        CH["`**ClickHouse**
+        DW`"]
+        MG["`**MongoDB**
+        Document`"]
+        ES["`**Elasticsearch**
+        OpenSearch · Search`"]
+        RD["`**Redis**
+        ElastiCache · Cache`"]
+        MY ~~~ PG ~~~ TB ~~~ MS ~~~ CH ~~~ MG ~~~ ES ~~~ RD
+    end
+
+    CC --> PLUGIN --> PY --> DB
+```
 
 한 줄 원칙:
 
